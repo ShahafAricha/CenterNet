@@ -16,11 +16,17 @@ except ImportError:
 import os
 import math
 
-from utils.timer import Timer
-from utils.blob import im_list_to_blob
-
-from model.config import cfg, get_output_dir
-from model.bbox_transform import clip_boxes, bbox_transform_inv
+PYCHARM = os.environ['USING_PYCHARM']=="1"
+if PYCHARM:
+  from src.tools.voc_eval_lib.utils.timer import Timer
+  from src.tools.voc_eval_lib.utils.blob import im_list_to_blob
+  from src.tools.voc_eval_lib.model.config import cfg, get_output_dir
+  from src.tools.voc_eval_lib.model.bbox_transform import clip_boxes, bbox_transform_inv
+else:
+  from utils.timer import Timer
+  from utils.blob import im_list_to_blob
+  from model.config import cfg, get_output_dir
+  from model.bbox_transform import clip_boxes, bbox_transform_inv
 # from model.nms_wrapper import nms  # need to compile cython nms before import nms
 nms = None  # not needed in pascal evaluation
 

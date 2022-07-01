@@ -4,16 +4,59 @@ from __future__ import print_function
 
 import _init_paths
 
+
+
 import os
+def is_path_exists(path:str):
+    paths = os.environ["PATH"].split(":")
+    for p in paths:
+        if p==path:
+            return True
+    return False
+NINJA_PATH = "/data/home/ssaricha/ninja"
+if not is_path_exists(NINJA_PATH):
+    os.environ["PATH"] += ":/data/home/ssaricha/ninja"
+
 
 import torch
 import torch.utils.data
-from opts import opts
-from models.model import create_model, load_model, save_model
-from models.data_parallel import DataParallel
-from logger import Logger
-from datasets.dataset_factory import get_dataset
-from trains.train_factory import train_factory
+
+# import torch
+# import torch.utils.data
+# import lib.opts as opts
+# opts = opts.opts
+# import lib.models.model as model
+# create_model, load_model, save_model = model.create_model, model.load_model, model.save_model
+# import lib.models.data_parallel as data_parallel
+# DataParallel = data_parallel.DataParallel
+# import lib.logger as logger
+# Logger = logger.Logger
+# import lib.datasets.dataset_factory as dataset_factory
+# get_dataset = dataset_factory.get_dataset
+# import lib.trains.train_factory as train_factory
+# train_factory = train_factory.train_factory
+
+
+PYCHARM = True
+os.environ['USING_PYCHARM'] = "1" if PYCHARM else "0"
+
+if PYCHARM:
+    # import src.lib.opts as opts
+    # opts = opts.opts
+    from  src.lib.opts import opts
+    from src.lib.models.model import create_model, load_model, save_model
+    from src.lib.models.data_parallel import DataParallel
+    from src.lib.logger import Logger
+    from src.lib.datasets.dataset_factory import get_dataset
+    from src.lib.trains.train_factory import train_factory
+else:
+    from opts import opts
+    from models.model import create_model, load_model, save_model
+    from models.data_parallel import DataParallel
+    from logger import Logger
+    from datasets.dataset_factory import get_dataset
+    from trains.train_factory import train_factory
+
 
 
 def main(opt):
@@ -32,6 +75,7 @@ def main(opt):
   model = create_model(opt.arch, opt.heads, opt.head_conv)
   optimizer = torch.optim.Adam(model.parameters(), opt.lr)
   start_epoch = 0
+
   if opt.load_model != '':
     model, optimizer, start_epoch = load_model(
       model, opt.load_model, optimizer, opt.resume, opt.lr, opt.lr_step)
@@ -48,6 +92,7 @@ def main(opt):
       num_workers=1,
       pin_memory=True
   )
+  # val_loader.dataset.debug=True
 
   if opt.test:
     _, preds = trainer.val(0, val_loader)
@@ -62,7 +107,6 @@ def main(opt):
       pin_memory=True,
       drop_last=True
   )
-
   print('Starting training...')
   best = 1e10
   for epoch in range(start_epoch + 1, opt.num_epochs + 1):

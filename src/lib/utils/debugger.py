@@ -10,9 +10,9 @@ class Debugger(object):
   def __init__(self, ipynb=False, theme='black', 
                num_classes=-1, dataset=None, down_ratio=4):
     self.ipynb = ipynb
-    if not self.ipynb:
-      import matplotlib.pyplot as plt
-      self.plt = plt
+    # if not self.ipynb:
+    import matplotlib.pyplot as plt
+    self.plt = plt
     self.imgs = {}
     self.theme = theme
     colors = [(color_list[_]).astype(np.uint8) \
@@ -62,6 +62,10 @@ class Debugger(object):
       self.focal_length = 721.5377
       self.W = 1242
       self.H = 375
+    elif dataset == 'acs':
+        self.names = acs_class_name
+        self.W = 1920
+        self.H = 1080
     num_classes = len(self.names)
     self.down_ratio=down_ratio
     # for bird view
@@ -455,6 +459,8 @@ coco_class_name = [
      'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
      'scissors', 'teddy bear', 'hair drier', 'toothbrush'
 ]
+
+acs_class_name = ["R", "L", "R+1", "L+1", "R+2", "L+2", "R+3", "L+3", "R+4", "L+4"]
 
 color_list = np.array(
         [

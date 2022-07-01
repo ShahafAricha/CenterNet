@@ -4,14 +4,26 @@ from __future__ import print_function
 
 import torch
 import numpy as np
+import os
+PYCHARM = os.environ['USING_PYCHARM']=="1"
+if PYCHARM:
+  from src.lib.models.losses import FocalLoss
+  from src.lib.models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
+  from src.lib.models.decode import ctdet_decode
+  from src.lib.models.utils import _sigmoid
+  from src.lib.utils.debugger import Debugger
+  from src.lib.utils.post_process import ctdet_post_process, ctdet_post_process_with_nms
+  from src.lib.utils.oracle_utils import gen_oracle_map
+else:
+  from models.losses import FocalLoss
+  from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
+  from models.decode import ctdet_decode
+  from models.utils import _sigmoid
+  from utils.debugger import Debugger
+  from utils.post_process import ctdet_post_process, ctdet_post_process_with_nms
+  from utils.oracle_utils import gen_oracle_map
 
-from models.losses import FocalLoss
-from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
-from models.decode import ctdet_decode
-from models.utils import _sigmoid
-from utils.debugger import Debugger
-from utils.post_process import ctdet_post_process
-from utils.oracle_utils import gen_oracle_map
+
 from .base_trainer import BaseTrainer
 
 class CtdetLoss(torch.nn.Module):
@@ -103,10 +115,13 @@ class CtdetTrainer(BaseTrainer):
       debugger.add_blend_img(img, pred, 'pred_hm')
       debugger.add_blend_img(img, gt, 'gt_hm')
       debugger.add_img(img, img_id='out_pred')
+      # above_thresh=0
       for k in range(len(dets[i])):
         if dets[i, k, 4] > opt.center_thresh:
           debugger.add_coco_bbox(dets[i, k, :4], dets[i, k, -1],
                                  dets[i, k, 4], img_id='out_pred')
+          # print(dets[i, k, :4])
+          # above_thresh +=1
 
       debugger.add_img(img, img_id='out_gt')
       for k in range(len(dets_gt[i])):
@@ -125,8 +140,22 @@ class CtdetTrainer(BaseTrainer):
       output['hm'], output['wh'], reg=reg,
       cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
     dets = dets.detach().cpu().numpy().reshape(1, -1, dets.shape[2])
-    dets_out = ctdet_post_process(
-      dets.copy(), batch['meta']['c'].cpu().numpy(),
-      batch['meta']['s'].cpu().numpy(),
-      output['hm'].shape[2], output['hm'].shape[3], output['hm'].shape[1])
+    if self.opt.nms:
+      # my code
+      dets_out = ctdet_post_process_with_nms(
+        dets,
+        batch['meta']['c'].cpu().numpy(),
+        batch['meta']['s'].cpu().numpy(),
+        output['hm'].shape[2],
+        output['hm'].shape[3],
+        self.opt.input_width,
+        self.opt.input_height,
+        self.opt.iou_thresh,
+        self.opt.center_thresh)
+    else:
+
+      dets_out = ctdet_post_process(
+        dets.copy(), batch['meta']['c'].cpu().numpy(),
+        batch['meta']['s'].cpu().numpy(),
+        output['hm'].shape[2], output['hm'].shape[3], output['hm'].shape[1])
     results[batch['meta']['img_id'].cpu().numpy()[0]] = dets_out[0]

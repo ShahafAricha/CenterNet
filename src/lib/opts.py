@@ -15,7 +15,7 @@ class opts(object):
     self.parser.add_argument('--dataset', default='coco',
                              help='coco | kitti | coco_hp | pascal')
     self.parser.add_argument('--exp_id', default='default')
-    self.parser.add_argument('--test', action='store_true')
+    self.parser.add_argument('--test', action='store_false')
     self.parser.add_argument('--debug', type=int, default=0,
                              help='level of visualization.'
                                   '1: only show the final detection results'
@@ -48,7 +48,7 @@ class opts(object):
                              help='disable progress bar and print to screen.')
     self.parser.add_argument('--hide_data_time', action='store_true',
                              help='not display time during training.')
-    self.parser.add_argument('--save_all', action='store_true',
+    self.parser.add_argument('--save_all', action='store_false',
                              help='save model to disk every 5 epochs.')
     self.parser.add_argument('--metric', default='loss', 
                              help='main metric to save best model')
@@ -105,6 +105,14 @@ class opts(object):
                              help='multi scale test augmentation.')
     self.parser.add_argument('--nms', action='store_true',
                              help='run nms in testing.')
+    # my added options
+    self.parser.add_argument('--iou_thresh', type=float, default=0.8,
+                             help='discards all overlapping boxes with IoU > iou_thresh.')
+    self.parser.add_argument('--input_width', type=int, default=1920,
+                             help='real input width by pixels.')
+    self.parser.add_argument('--input_height', type=int, default=1080,
+                             help='real input height by pixels.')
+
     self.parser.add_argument('--K', type=int, default=100,
                              help='max number of output objects.') 
     self.parser.add_argument('--not_prefetch_test', action='store_true',

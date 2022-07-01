@@ -15,7 +15,11 @@ import PIL
 # from utils.cython_bbox import bbox_overlaps
 import numpy as np
 import scipy.sparse
-from model.config import cfg
+PYCHARM = os.environ['USING_PYCHARM']=="1"
+if PYCHARM:
+  from src.tools.voc_eval_lib.model.config import cfg
+else:
+  from model.config import cfg
 
 def bbox_overlaps(box1, box2):
   area1 = (box1[2] - box1[0] + 1) * (box1[3] - box1[1] + 1)

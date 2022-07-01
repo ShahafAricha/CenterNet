@@ -15,6 +15,7 @@ from utils.image import draw_dense_reg
 import math
 
 class CTDetDataset(data.Dataset):
+  debug = False
   def _coco_box_to_bbox(self, box):
     bbox = np.array([box[0], box[1], box[0] + box[2], box[1] + box[3]],
                     dtype=np.float32)
@@ -27,6 +28,7 @@ class CTDetDataset(data.Dataset):
     return border // i
 
   def __getitem__(self, index):
+
     img_id = self.images[index]
     file_name = self.coco.loadImgs(ids=[img_id])[0]['file_name']
     img_path = os.path.join(self.img_dir, file_name)
@@ -35,7 +37,9 @@ class CTDetDataset(data.Dataset):
     num_objs = min(len(anns), self.max_objs)
 
     img = cv2.imread(img_path)
-
+    if self.debug:
+      print("__getitem__: index == " + str(index))
+      print("__getitem__: img_path == " + img_path)
     height, width = img.shape[0], img.shape[1]
     c = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
     if self.opt.keep_res:
@@ -140,6 +144,6 @@ class CTDetDataset(data.Dataset):
     if self.opt.debug > 0 or not self.split == 'train':
       gt_det = np.array(gt_det, dtype=np.float32) if len(gt_det) > 0 else \
                np.zeros((1, 6), dtype=np.float32)
-      meta = {'c': c, 's': s, 'gt_det': gt_det, 'img_id': img_id}
+      meta = {'c': c, 's': s, 'gt_det': gt_det, 'img_id': img_id, 'img_path': img_path}
       ret['meta'] = meta
     return ret

@@ -3,9 +3,12 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import torch
+
 from .image import transform_preds
 from .ddd_utils import ddd2locrot
 
+from torchvision.ops import nms
 
 def get_pred_depth(depth):
   return depth
@@ -96,6 +99,43 @@ def ctdet_post_process(dets, c, s, h, w, num_classes):
       top_preds[j + 1] = np.concatenate([
         dets[i, inds, :4].astype(np.float32),
         dets[i, inds, 4:5].astype(np.float32)], axis=1).tolist()
+    ret.append(top_preds)
+  return ret
+
+
+def ctdet_post_process_with_nms(dets, c, s, h, w, original_width, original_height, iou_thresh, center_thresh):
+  # dets: batch x max_dets x dim
+  # return 1-based class det dict
+  ret = []
+  for i in range(dets.shape[0]):
+    top_preds = {}
+    # dets[i, :, :2] = transform_preds(
+    #       dets[i, :, 0:2], c[i], s[i], (w, h))
+    # dets[i, :, 2:4] = transform_preds(
+    #       dets[i, :, 2:4], c[i], s[i], (w, h))
+    # TODO: is this right? it seems that we are scaling x,y separately for TL and BR with the same scale (of width)
+    dets[i, :, :2] = transform_preds(
+          dets[i, :, 0:2], c[i], s[i], (w, h))
+    dets[i, :, 2:4] = transform_preds(
+          dets[i, :, 2:4], c[i], s[i], (w, h))
+    # convert detections to tensor
+    detections = torch.Tensor(dets)
+    # make sure all values are legal
+    detections[detections < 0] = 0
+
+    detections[i, detections[i, :, 0] > original_width, 0] = original_width
+    detections[i, detections[i, :, 2] > original_width, 2] = original_width
+    detections[i, detections[i, :, 1] > original_height, 1] = original_height
+    detections[i, detections[i, :, 4] > original_height, 4] = original_height
+
+    boxes = detections[i][:, :4]
+    scores = detections[i][:, 4]
+    # select all detection with overlap less than iou_thresh
+    det_ind_after_nms = nms(boxes=boxes, scores=scores, iou_threshold=iou_thresh)
+    # select all scores with score confidence greater than center_thresh
+    det_ind_after_nms = det_ind_after_nms[scores[det_ind_after_nms] > center_thresh]
+    # get the top prediction from detections [detections of single image X (bbox[TLxy, BRxy], score, class)]
+    top_preds = detections[i][det_ind_after_nms].tolist()
     ret.append(top_preds)
   return ret
 
